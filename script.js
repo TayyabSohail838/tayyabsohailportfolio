@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (preloader) {
     setTimeout(() => {
       preloader.classList.add('hidden');
-    }, 2200);
+    }, 1800);
   }
 
   // ─────────────────────────────────────────────
@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const allNavLinks = document.querySelectorAll('.nav-link');
 
   const handleScroll = () => {
-    if (window.scrollY > 60) {
+    if (window.scrollY > 50) {
       navbar.classList.add('scrolled');
     } else {
       navbar.classList.remove('scrolled');
@@ -79,76 +79,69 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ─────────────────────────────────────────────
-  // 3. HERO VIDEO → IMAGE TRANSITION
-  //    Video autoplays full-screen on load.
-  //    When it ends, it fades out and the hero
-  //    content + image fade in.
+  // 3. HERO VIDEO & VOICE CONTROLS
+  //    Plays the talking video + voice audio in sync
   // ─────────────────────────────────────────────
-  const heroVideo    = document.getElementById('heroVideo');
-  const heroContent  = document.getElementById('heroContent');
-  const heroImageWrap = document.getElementById('heroImageWrap');
-  const unmuteBtn    = document.getElementById('unmuteBtn');
+  const heroVideo      = document.getElementById('heroVideo');
+  const heroAudio      = document.getElementById('heroAudio');
+  const clickToPlayBtn = document.getElementById('clickToPlayBtn');
+  const playBtnText    = document.getElementById('playBtnText');
+  const playIcon       = clickToPlayBtn?.querySelector('.play-icon');
+  const pauseIcon      = clickToPlayBtn?.querySelector('.pause-icon');
 
-  if (heroVideo) {
-    // Video starts muted (browsers require muted for autoplay).
-    // Show unmute button so user can enable sound.
-    heroVideo.muted = true;
+  let isPlayingMedia = false;
 
-    // Attempt autoplay
-    const playPromise = heroVideo.play();
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
-        // Autoplay started successfully
-        if (unmuteBtn) unmuteBtn.style.display = '';
-      }).catch(() => {
-        // Autoplay blocked — skip to hero content immediately
-        transitionToHero();
-      });
-    }
-
-    // When video ends → transition to hero image
-    heroVideo.addEventListener('ended', () => {
-      transitionToHero();
-    });
-
-    // Unmute button
-    unmuteBtn?.addEventListener('click', () => {
-      heroVideo.muted = !heroVideo.muted;
-      const label = unmuteBtn.querySelector('span');
-      if (heroVideo.muted) {
-        if (label) label.textContent = 'Unmute';
-      } else {
-        if (label) label.textContent = 'Mute';
-      }
-    });
-  } else {
-    // No video — show content immediately
-    transitionToHero();
-  }
-
-  function transitionToHero() {
-    // Fade out video
+  const startMedia = () => {
+    isPlayingMedia = true;
     if (heroVideo) {
-      heroVideo.classList.remove('hero-video-active');
-      heroVideo.classList.add('hero-video-ended');
-      heroVideo.pause();
+      heroVideo.currentTime = 0;
+      heroVideo.play().catch(() => {});
+      heroVideo.classList.add('playing');
     }
-    // Hide unmute button
-    if (unmuteBtn) unmuteBtn.style.display = 'none';
+    if (heroAudio) {
+      heroAudio.currentTime = 0;
+      heroAudio.play().catch(() => {});
+    }
+    if (clickToPlayBtn) clickToPlayBtn.classList.add('active');
+    if (playIcon) playIcon.style.display = 'none';
+    if (pauseIcon) pauseIcon.style.display = '';
+    if (playBtnText) playBtnText.textContent = 'Pause Video';
+  };
 
-    // Fade in hero content and image
-    if (heroContent) {
-      heroContent.classList.remove('hero-content-hidden');
-      heroContent.classList.add('hero-content-visible');
+  const stopMedia = () => {
+    isPlayingMedia = false;
+    if (heroVideo) {
+      heroVideo.pause();
+      heroVideo.classList.remove('playing');
     }
-    if (heroImageWrap) {
-      heroImageWrap.classList.remove('hero-image-hidden');
-      heroImageWrap.classList.add('hero-image-visible');
+    if (heroAudio) {
+      heroAudio.pause();
     }
-  }
+    if (clickToPlayBtn) clickToPlayBtn.classList.remove('active');
+    if (playIcon) playIcon.style.display = '';
+    if (pauseIcon) pauseIcon.style.display = 'none';
+    if (playBtnText) playBtnText.textContent = 'Click to Play';
+  };
+
+  clickToPlayBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (isPlayingMedia) {
+      stopMedia();
+    } else {
+      startMedia();
+    }
+  });
+
+  heroAudio?.addEventListener('ended', () => {
+    stopMedia();
+  });
+
+  heroVideo?.addEventListener('ended', () => {
+    stopMedia();
+  });
 
   // ─────────────────────────────────────────────
-  // 4. SCROLL ANIMATIONS (lightweight AOS clone)
+  // 4. SCROLL ANIMATIONS
   // ─────────────────────────────────────────────
   const aosElements = document.querySelectorAll('[data-aos]');
 
@@ -210,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         formSuccess.style.display = 'none';
       }, 5000);
-    }, 1800);
+    }, 1500);
   });
 
   // ─────────────────────────────────────────────
@@ -250,44 +243,29 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ─────────────────────────────────────────────
-  // 8. TYPING EFFECT on hero title
+  // 8. TYPING EFFECT on hero title role
   // ─────────────────────────────────────────────
   const roles = [
-    'AI & Full Stack Developer',
-    'Machine Learning Engineer',
-    'Python Enthusiast',
-    'Problem Solver'
+    'Problem<br />Solver',
+    'AI<br />Developer',
+    'Full Stack<br />Engineer',
+    'ML<br />Specialist'
   ];
-  const heroTitleRed = document.querySelector('.hero-title-red');
-  if (heroTitleRed) {
-    let roleIdx  = 0;
-    let charIdx  = 0;
-    let deleting = false;
-    let paused   = false;
-
-    const type = () => {
-      const current = roles[roleIdx];
-
-      if (!deleting) {
-        heroTitleRed.textContent = current.slice(0, charIdx + 1);
-        charIdx++;
-        if (charIdx === current.length) {
-          paused = true;
-          setTimeout(() => { paused = false; deleting = true; }, 2200);
-        }
-      } else {
-        heroTitleRed.textContent = current.slice(0, charIdx - 1);
-        charIdx--;
-        if (charIdx === 0) {
-          deleting = false;
-          roleIdx  = (roleIdx + 1) % roles.length;
-        }
-      }
-    };
-
+  const heroRole = document.getElementById('heroRole');
+  if (heroRole) {
+    let roleIdx = 0;
     setInterval(() => {
-      if (!paused) type();
-    }, 90);
+      heroRole.style.opacity = '0';
+      heroRole.style.transform = 'translateY(8px)';
+      heroRole.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+
+      setTimeout(() => {
+        roleIdx = (roleIdx + 1) % roles.length;
+        heroRole.innerHTML = roles[roleIdx];
+        heroRole.style.opacity = '1';
+        heroRole.style.transform = 'translateY(0)';
+      }, 400);
+    }, 3200);
   }
 
   // ─────────────────────────────────────────────
@@ -295,11 +273,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // ─────────────────────────────────────────────
   document.querySelectorAll('.project-card').forEach(card => {
     card.addEventListener('mousemove', (e) => {
-      const rect   = card.getBoundingClientRect();
-      const x      = (e.clientX - rect.left) / rect.width  - 0.5;
-      const y      = (e.clientY - rect.top)  / rect.height - 0.5;
-      const rotateX = -y * 6;
-      const rotateY =  x * 6;
+      const rect    = card.getBoundingClientRect();
+      const x       = (e.clientX - rect.left) / rect.width  - 0.5;
+      const y       = (e.clientY - rect.top)  / rect.height - 0.5;
+      const rotateX = -y * 5;
+      const rotateY =  x * 5;
       card.style.transform = `translateY(-6px) perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
     });
     card.addEventListener('mouseleave', () => {
