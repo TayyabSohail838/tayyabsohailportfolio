@@ -13,133 +13,68 @@ document.addEventListener('DOMContentLoaded', () => {
   const playBtnText    = document.getElementById('playBtnText');
   const playIcon       = clickToPlayBtn?.querySelector('.play-icon');
   const pauseIcon      = clickToPlayBtn?.querySelector('.pause-icon');
-  const volumeIcon     = clickToPlayBtn?.querySelector('.volume-icon');
 
   let isPlaying = false;
-  let isMutedAutoRun = false;
   let hasPlayedOnce = false;
   let preloaderDismissed = false;
 
-  const setButtonPlayingUnmuted = () => {
-    if (clickToPlayBtn) {
-      clickToPlayBtn.classList.add('active');
-      clickToPlayBtn.classList.remove('pulsing');
-    }
+  const setButtonPlaying = () => {
+    if (clickToPlayBtn) clickToPlayBtn.classList.add('active');
     if (playIcon) playIcon.style.display = 'none';
     if (pauseIcon) pauseIcon.style.display = '';
-    if (volumeIcon) volumeIcon.style.display = 'none';
     if (playBtnText) playBtnText.textContent = 'Pause Video';
   };
 
-  const setButtonPlayingMuted = () => {
-    if (clickToPlayBtn) {
-      clickToPlayBtn.classList.remove('active');
-      clickToPlayBtn.classList.add('pulsing');
-    }
-    if (playIcon) playIcon.style.display = 'none';
-    if (pauseIcon) pauseIcon.style.display = 'none';
-    if (volumeIcon) volumeIcon.style.display = '';
-    if (playBtnText) playBtnText.textContent = 'Enable Audio';
-  };
-
   const setButtonIdle = () => {
-    if (clickToPlayBtn) {
-      clickToPlayBtn.classList.remove('active', 'pulsing');
-    }
+    if (clickToPlayBtn) clickToPlayBtn.classList.remove('active');
     if (playIcon) playIcon.style.display = '';
     if (pauseIcon) pauseIcon.style.display = 'none';
-    if (volumeIcon) volumeIcon.style.display = 'none';
     if (playBtnText) {
       playBtnText.textContent = hasPlayedOnce ? 'Replay Video' : 'Click to Play';
     }
   };
 
-  const unmuteAndPlayFromStart = () => {
+  const autoEnableAudio = () => {
     if (!heroVideo) return;
     heroVideo.muted = false;
     heroVideo.volume = 1.0;
-    heroVideo.currentTime = 0;
-    isPlaying = true;
-    isMutedAutoRun = false;
-    heroVideo.play().then(() => {
-      heroVideo.classList.add('playing');
-      setButtonPlayingUnmuted();
-    }).catch(err => {
-      console.warn('Unmute play error:', err);
-    });
   };
 
-  const setupGlobalUnmuteListener = () => {
-    const handleFirstGesture = (e) => {
-      if (clickToPlayBtn && e && clickToPlayBtn.contains(e.target)) return;
-      cleanupGestureListeners();
-      if (isMutedAutoRun && isPlaying) {
-        unmuteAndPlayFromStart();
-      }
-    };
+  // Automatically enable audio on any user interaction seamlessly
+  ['pointerdown', 'touchstart', 'click', 'keydown', 'scroll', 'wheel'].forEach(evt => {
+    window.addEventListener(evt, autoEnableAudio, { passive: true });
+  });
 
-    const cleanupGestureListeners = () => {
-      window.removeEventListener('pointerdown', handleFirstGesture);
-      window.removeEventListener('touchstart', handleFirstGesture);
-      window.removeEventListener('keydown', handleFirstGesture);
-      window.removeEventListener('click', handleFirstGesture);
-    };
-
-    window.addEventListener('pointerdown', handleFirstGesture, { once: true });
-    window.addEventListener('touchstart', handleFirstGesture, { once: true });
-    window.addEventListener('keydown', handleFirstGesture, { once: true });
-    window.addEventListener('click', handleFirstGesture, { once: true });
-  };
-
-  const playTalkingVideo = (requestUnmuted = true) => {
+  const playTalkingVideo = () => {
     if (!heroVideo) return;
 
-    if (requestUnmuted) {
-      heroVideo.muted = false;
-      heroVideo.volume = 1.0;
-      heroVideo.currentTime = 0;
-      isPlaying = true;
-      isMutedAutoRun = false;
+    isPlaying = true;
+    heroVideo.currentTime = 0;
+    heroVideo.muted = false;
+    heroVideo.volume = 1.0;
 
-      const playPromise = heroVideo.play();
-      heroVideo.classList.add('playing');
-      setButtonPlayingUnmuted();
+    const playPromise = heroVideo.play();
+    heroVideo.classList.add('playing');
+    setButtonPlaying();
 
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          console.warn('Browser blocked unmuted autoplay, auto-running muted with instant-unmute ready:', err);
-          // Automatically run muted so the video is 100% running as requested!
-          heroVideo.muted = true;
-          heroVideo.currentTime = 0;
-          heroVideo.play().then(() => {
-            isPlaying = true;
-            isMutedAutoRun = true;
-            heroVideo.classList.add('playing');
-            setButtonPlayingMuted();
-            setupGlobalUnmuteListener();
-          }).catch((e) => {
-            console.error('Muted autoplay failed:', e);
-            stopTalkingVideo();
-          });
-        });
-      }
-    } else {
-      heroVideo.muted = true;
-      heroVideo.currentTime = 0;
-      isPlaying = true;
-      isMutedAutoRun = true;
-      heroVideo.play().then(() => {
-        heroVideo.classList.add('playing');
-        setButtonPlayingMuted();
-        setupGlobalUnmuteListener();
-      }).catch(stopTalkingVideo);
+    if (playPromise !== undefined) {
+      playPromise.catch((err) => {
+        // If unmuted autoplay blocked by browser policy on cold refresh:
+        // Keep video running automatically, and immediately unmute on first gesture!
+        console.warn('Auto-playing with audio activation listener:', err);
+        heroVideo.muted = true;
+        heroVideo.play().then(() => {
+          isPlaying = true;
+          heroVideo.classList.add('playing');
+          setButtonPlaying();
+        }).catch(stopTalkingVideo);
+      });
     }
   };
 
   const stopTalkingVideo = () => {
     if (!heroVideo) return;
     isPlaying = false;
-    isMutedAutoRun = false;
     heroVideo.pause();
     heroVideo.classList.remove('playing');
     setButtonIdle();
@@ -157,15 +92,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Click to Play / Enable Audio / Pause button toggle
+  // Click to Play / Pause button toggle
   clickToPlayBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (isMutedAutoRun) {
-      unmuteAndPlayFromStart();
-    } else if (isPlaying) {
+    if (isPlaying) {
       stopTalkingVideo();
     } else {
-      playTalkingVideo(true);
+      heroVideo.muted = false;
+      heroVideo.volume = 1.0;
+      playTalkingVideo();
     }
   });
 
@@ -180,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Right after this preloader screen finishes and fades out, automatically run the video!
     setTimeout(() => {
-      playTalkingVideo(true);
+      playTalkingVideo();
     }, 250);
   };
 
