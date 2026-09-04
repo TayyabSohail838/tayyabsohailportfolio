@@ -251,18 +251,22 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ─────────────────────────────────────────────
-  // 7. CURSOR GLOW (subtle red glow following mouse)
+  // 7. CURSOR GLOW (vibrant red glow following mouse)
   // ─────────────────────────────────────────────
   const glow = document.createElement('div');
   glow.id = 'cursor-glow';
   glow.style.cssText = `
-    position:fixed; pointer-events:none; z-index:9998;
-    width:400px; height:400px;
-    border-radius:50%;
-    background: radial-gradient(circle, rgba(255,42,42,0.06) 0%, transparent 70%);
-    transform:translate(-50%,-50%);
-    transition: left 0.12s ease, top 0.12s ease;
-    left:-999px; top:-999px;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9998;
+    width: 480px;
+    height: 480px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 42, 42, 0.24) 0%, rgba(255, 42, 42, 0.12) 30%, rgba(255, 42, 42, 0.04) 55%, transparent 75%);
+    transform: translate(-50%, -50%);
+    transition: left 0.06s ease-out, top 0.06s ease-out;
+    left: -999px;
+    top: -999px;
   `;
   document.body.appendChild(glow);
 
