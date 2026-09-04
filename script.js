@@ -80,9 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ─────────────────────────────────────────────
   // 3. HERO TALKING VIDEO & CLICK TO PLAY
-  //    Hero video talks once on page open with its
-  //    own native voice and exact tone.
-  //    After talking once, user has "Click to Play".
+  //    Hero video talks once with its own native
+  //    voice. Never plays muted silently.
   // ─────────────────────────────────────────────
   const heroVideo      = document.getElementById('heroVideo');
   const clickToPlayBtn = document.getElementById('clickToPlayBtn');
@@ -91,14 +90,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const pauseIcon      = clickToPlayBtn?.querySelector('.pause-icon');
 
   let isPlaying = false;
-  let hasPlayedOnce = false;
 
-  const playTalkingVideo = (unmute = true) => {
+  const playTalkingVideo = () => {
     if (!heroVideo) return;
     isPlaying = true;
-    heroVideo.currentTime = 0;
-    heroVideo.muted = !unmute;
+    heroVideo.muted = false;
     heroVideo.volume = 1.0;
+    heroVideo.currentTime = 0;
 
     const playPromise = heroVideo.play();
     heroVideo.classList.add('playing');
@@ -110,11 +108,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (playPromise !== undefined) {
       playPromise.catch(() => {
-        // Browser blocked unmuted autoplay -> play muted and unmute on first user click
-        if (unmute) {
-          playTalkingVideo(false);
-          enableAudioOnFirstGesture();
-        }
+        // Browser blocked unmuted autoplay: DO NOT play muted silently!
+        // Reset to clean idle state and wait for first user click
+        stopTalkingVideo();
+
+        const startOnFirstClick = (e) => {
+          // If clicked the button itself, the button click listener will handle it
+          if (clickToPlayBtn && clickToPlayBtn.contains(e.target)) return;
+          window.removeEventListener('click', startOnFirstClick);
+          window.removeEventListener('touchstart', startOnFirstClick);
+          playTalkingVideo();
+        };
+        window.addEventListener('click', startOnFirstClick, { once: true });
+        window.addEventListener('touchstart', startOnFirstClick, { once: true });
       });
     }
   };
@@ -131,30 +137,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (playBtnText) playBtnText.textContent = 'Click to Play';
   };
 
-  const enableAudioOnFirstGesture = () => {
-    const unmuteHandler = () => {
-      if (!hasPlayedOnce && heroVideo) {
-        heroVideo.muted = false;
-        heroVideo.currentTime = 0;
-        heroVideo.play().catch(() => {});
-      }
-      window.removeEventListener('click', unmuteHandler);
-      window.removeEventListener('touchstart', unmuteHandler);
-    };
-    window.addEventListener('click', unmuteHandler, { once: true });
-    window.addEventListener('touchstart', unmuteHandler, { once: true });
-  };
-
   if (heroVideo) {
     heroVideo.loop = false;
-    // Auto-play talking video ONCE on portfolio open
+    heroVideo.muted = false;
+    heroVideo.volume = 1.0;
+
+    // Try auto-play once with sound on load
     setTimeout(() => {
-      playTalkingVideo(true);
-    }, 600);
+      playTalkingVideo();
+    }, 500);
 
     // When video ends after talking once
     heroVideo.addEventListener('ended', () => {
-      hasPlayedOnce = true;
       stopTalkingVideo();
     });
   }
@@ -165,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isPlaying) {
       stopTalkingVideo();
     } else {
-      playTalkingVideo(true);
+      playTalkingVideo();
     }
   });
 
