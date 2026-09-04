@@ -79,65 +79,94 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ─────────────────────────────────────────────
-  // 3. HERO VIDEO & VOICE CONTROLS
-  //    Plays the talking video + voice audio in sync
+  // 3. HERO TALKING VIDEO & CLICK TO PLAY
+  //    Hero video talks once on page open with its
+  //    own native voice and exact tone.
+  //    After talking once, user has "Click to Play".
   // ─────────────────────────────────────────────
   const heroVideo      = document.getElementById('heroVideo');
-  const heroAudio      = document.getElementById('heroAudio');
   const clickToPlayBtn = document.getElementById('clickToPlayBtn');
   const playBtnText    = document.getElementById('playBtnText');
   const playIcon       = clickToPlayBtn?.querySelector('.play-icon');
   const pauseIcon      = clickToPlayBtn?.querySelector('.pause-icon');
 
-  let isPlayingMedia = false;
+  let isPlaying = false;
+  let hasPlayedOnce = false;
 
-  const startMedia = () => {
-    isPlayingMedia = true;
-    if (heroVideo) {
-      heroVideo.currentTime = 0;
-      heroVideo.play().catch(() => {});
-      heroVideo.classList.add('playing');
-    }
-    if (heroAudio) {
-      heroAudio.currentTime = 0;
-      heroAudio.play().catch(() => {});
-    }
+  const playTalkingVideo = (unmute = true) => {
+    if (!heroVideo) return;
+    isPlaying = true;
+    heroVideo.currentTime = 0;
+    heroVideo.muted = !unmute;
+    heroVideo.volume = 1.0;
+
+    const playPromise = heroVideo.play();
+    heroVideo.classList.add('playing');
+
     if (clickToPlayBtn) clickToPlayBtn.classList.add('active');
     if (playIcon) playIcon.style.display = 'none';
     if (pauseIcon) pauseIcon.style.display = '';
     if (playBtnText) playBtnText.textContent = 'Pause Video';
+
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // Browser blocked unmuted autoplay -> play muted and unmute on first user click
+        if (unmute) {
+          playTalkingVideo(false);
+          enableAudioOnFirstGesture();
+        }
+      });
+    }
   };
 
-  const stopMedia = () => {
-    isPlayingMedia = false;
-    if (heroVideo) {
-      heroVideo.pause();
-      heroVideo.classList.remove('playing');
-    }
-    if (heroAudio) {
-      heroAudio.pause();
-    }
+  const stopTalkingVideo = () => {
+    if (!heroVideo) return;
+    isPlaying = false;
+    heroVideo.pause();
+    heroVideo.classList.remove('playing');
+
     if (clickToPlayBtn) clickToPlayBtn.classList.remove('active');
     if (playIcon) playIcon.style.display = '';
     if (pauseIcon) pauseIcon.style.display = 'none';
     if (playBtnText) playBtnText.textContent = 'Click to Play';
   };
 
+  const enableAudioOnFirstGesture = () => {
+    const unmuteHandler = () => {
+      if (!hasPlayedOnce && heroVideo) {
+        heroVideo.muted = false;
+        heroVideo.currentTime = 0;
+        heroVideo.play().catch(() => {});
+      }
+      window.removeEventListener('click', unmuteHandler);
+      window.removeEventListener('touchstart', unmuteHandler);
+    };
+    window.addEventListener('click', unmuteHandler, { once: true });
+    window.addEventListener('touchstart', unmuteHandler, { once: true });
+  };
+
+  if (heroVideo) {
+    heroVideo.loop = false;
+    // Auto-play talking video ONCE on portfolio open
+    setTimeout(() => {
+      playTalkingVideo(true);
+    }, 600);
+
+    // When video ends after talking once
+    heroVideo.addEventListener('ended', () => {
+      hasPlayedOnce = true;
+      stopTalkingVideo();
+    });
+  }
+
+  // Click to Play button toggle
   clickToPlayBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (isPlayingMedia) {
-      stopMedia();
+    if (isPlaying) {
+      stopTalkingVideo();
     } else {
-      startMedia();
+      playTalkingVideo(true);
     }
-  });
-
-  heroAudio?.addEventListener('ended', () => {
-    stopMedia();
-  });
-
-  heroVideo?.addEventListener('ended', () => {
-    stopMedia();
   });
 
   // ─────────────────────────────────────────────
