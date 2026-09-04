@@ -62,7 +62,7 @@ body {
   align-items: center;
   gap: 8px;
   padding: 14px 28px;
-  border-radius: 50px;
+  border-radius: 8px;
   font-family: var(--font-main);
   font-size: 0.9rem;
   font-weight: 600;
@@ -111,7 +111,7 @@ body {
   background: rgba(255,42,42,0.1);
   border: 1px solid rgba(255,42,42,0.2);
   padding: 6px 16px;
-  border-radius: 50px;
+  border-radius: 6px;
   margin-bottom: 16px;
 }
 
@@ -293,7 +293,7 @@ body {
   text-decoration: none;
   background: var(--red);
   padding: 10px 22px;
-  border-radius: 50px;
+  border-radius: 8px;
   transition: var(--transition);
   white-space: nowrap;
   letter-spacing: 0.03em;
@@ -555,7 +555,7 @@ body {
   border: 1px solid var(--white-20);
   color: var(--white-60);
   padding: 8px 18px;
-  border-radius: 50px;
+  border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
@@ -706,7 +706,7 @@ body {
   background: var(--white-5);
   border: 1px solid var(--white-10);
   padding: 6px 16px;
-  border-radius: 50px;
+  border-radius: 6px;
   transition: var(--transition);
 }
 .tech-pill:hover {
@@ -1019,7 +1019,7 @@ body {
   background: rgba(255,42,42,0.1);
   border: 1px solid rgba(255,42,42,0.2);
   padding: 5px 14px;
-  border-radius: 50px;
+  border-radius: 6px;
   margin-bottom: 16px;
 }
 
@@ -1069,7 +1069,7 @@ body {
   background: var(--white-5);
   border: 1px solid var(--white-10);
   padding: 4px 12px;
-  border-radius: 50px;
+  border-radius: 6px;
   transition: var(--transition);
 }
 .project-card:hover .tag {
@@ -1113,7 +1113,7 @@ body {
   background: var(--white-5);
   border: 1px solid var(--white-10);
   padding: 8px 16px;
-  border-radius: 50px;
+  border-radius: 8px;
   text-decoration: none;
   transition: var(--transition);
 }
@@ -1294,7 +1294,7 @@ body {
 .footer-social {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
+  border-radius: 8px;
   background: var(--white-5);
   border: 1px solid var(--white-10);
   display: flex;

@@ -1,8 +1,8 @@
 # Muhammad Tayyab Sohail — Portfolio Website
 
-A modern, responsive portfolio website with a stunning dark theme and red accent design.
+A modern, responsive portfolio website with a sleek dark theme and red accent design.
 
-## 🚀 Features
+## Features
 
 - **Hero Video Intro** — Autoplay talking video that transitions to a hero image
 - **Smooth Scroll Animations** — Lightweight AOS-style scroll reveal animations
@@ -14,14 +14,14 @@ A modern, responsive portfolio website with a stunning dark theme and red accent
 - **Cursor Glow** — Subtle red glow following mouse cursor
 - **3D Card Tilt** — Interactive project card hover effects
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - HTML5
 - CSS3 (Custom Properties, Grid, Flexbox, Animations)
 - Vanilla JavaScript (ES6+)
 - Google Fonts (Inter, Syne)
 
-## 📁 Structure
+## Structure
 
 ```
 portfolio/
@@ -41,12 +41,12 @@ portfolio/
 └── README.md
 ```
 
-## 📬 Contact
+## Contact
 
 - **Email**: tayyabsohail838@gmail.com
 - **LinkedIn**: [linkedin.com/in/tayyabsohail838](https://www.linkedin.com/in/tayyabsohail838)
 - **GitHub**: [github.com/TayyabSohail838](https://github.com/TayyabSohail838)
 
-## 📄 License
+## License
 
 © 2026 Muhammad Tayyab Sohail. All rights reserved.
