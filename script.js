@@ -13,62 +13,133 @@ document.addEventListener('DOMContentLoaded', () => {
   const playBtnText    = document.getElementById('playBtnText');
   const playIcon       = clickToPlayBtn?.querySelector('.play-icon');
   const pauseIcon      = clickToPlayBtn?.querySelector('.pause-icon');
+  const volumeIcon     = clickToPlayBtn?.querySelector('.volume-icon');
 
   let isPlaying = false;
+  let isMutedAutoRun = false;
+  let hasPlayedOnce = false;
   let preloaderDismissed = false;
 
-  const setButtonPlaying = () => {
-    if (clickToPlayBtn) clickToPlayBtn.classList.add('active');
+  const setButtonPlayingUnmuted = () => {
+    if (clickToPlayBtn) {
+      clickToPlayBtn.classList.add('active');
+      clickToPlayBtn.classList.remove('pulsing');
+    }
     if (playIcon) playIcon.style.display = 'none';
     if (pauseIcon) pauseIcon.style.display = '';
+    if (volumeIcon) volumeIcon.style.display = 'none';
     if (playBtnText) playBtnText.textContent = 'Pause Video';
   };
 
-  const setButtonIdle = () => {
-    if (clickToPlayBtn) clickToPlayBtn.classList.remove('active');
-    if (playIcon) playIcon.style.display = '';
+  const setButtonPlayingMuted = () => {
+    if (clickToPlayBtn) {
+      clickToPlayBtn.classList.remove('active');
+      clickToPlayBtn.classList.add('pulsing');
+    }
+    if (playIcon) playIcon.style.display = 'none';
     if (pauseIcon) pauseIcon.style.display = 'none';
-    if (playBtnText) playBtnText.textContent = 'Click to Play';
+    if (volumeIcon) volumeIcon.style.display = '';
+    if (playBtnText) playBtnText.textContent = 'Enable Audio';
   };
 
-  const playTalkingVideo = () => {
+  const setButtonIdle = () => {
+    if (clickToPlayBtn) {
+      clickToPlayBtn.classList.remove('active', 'pulsing');
+    }
+    if (playIcon) playIcon.style.display = '';
+    if (pauseIcon) pauseIcon.style.display = 'none';
+    if (volumeIcon) volumeIcon.style.display = 'none';
+    if (playBtnText) {
+      playBtnText.textContent = hasPlayedOnce ? 'Replay Video' : 'Click to Play';
+    }
+  };
+
+  const unmuteAndPlayFromStart = () => {
     if (!heroVideo) return;
-    isPlaying = true;
     heroVideo.muted = false;
     heroVideo.volume = 1.0;
     heroVideo.currentTime = 0;
+    isPlaying = true;
+    isMutedAutoRun = false;
+    heroVideo.play().then(() => {
+      heroVideo.classList.add('playing');
+      setButtonPlayingUnmuted();
+    }).catch(err => {
+      console.warn('Unmute play error:', err);
+    });
+  };
 
-    const playPromise = heroVideo.play();
-    heroVideo.classList.add('playing');
-    setButtonPlaying();
+  const setupGlobalUnmuteListener = () => {
+    const handleFirstGesture = (e) => {
+      if (clickToPlayBtn && e && clickToPlayBtn.contains(e.target)) return;
+      cleanupGestureListeners();
+      if (isMutedAutoRun && isPlaying) {
+        unmuteAndPlayFromStart();
+      }
+    };
 
-    if (playPromise !== undefined) {
-      playPromise.catch((err) => {
-        // If unmuted autoplay is blocked by browser security policy:
-        // Do NOT play muted silently. Reset to clean idle state.
-        stopTalkingVideo();
+    const cleanupGestureListeners = () => {
+      window.removeEventListener('pointerdown', handleFirstGesture);
+      window.removeEventListener('touchstart', handleFirstGesture);
+      window.removeEventListener('keydown', handleFirstGesture);
+      window.removeEventListener('click', handleFirstGesture);
+    };
 
-        // Listen for the very next user gesture anywhere on screen to play with audio instantly
-        const startOnFirstGesture = (e) => {
-          if (clickToPlayBtn && e && clickToPlayBtn.contains(e.target)) return;
-          window.removeEventListener('pointerdown', startOnFirstGesture);
-          window.removeEventListener('touchstart', startOnFirstGesture);
-          window.removeEventListener('keydown', startOnFirstGesture);
-          window.removeEventListener('click', startOnFirstGesture);
-          playTalkingVideo();
-        };
+    window.addEventListener('pointerdown', handleFirstGesture, { once: true });
+    window.addEventListener('touchstart', handleFirstGesture, { once: true });
+    window.addEventListener('keydown', handleFirstGesture, { once: true });
+    window.addEventListener('click', handleFirstGesture, { once: true });
+  };
 
-        window.addEventListener('pointerdown', startOnFirstGesture, { once: true });
-        window.addEventListener('touchstart', startOnFirstGesture, { once: true });
-        window.addEventListener('keydown', startOnFirstGesture, { once: true });
-        window.addEventListener('click', startOnFirstGesture, { once: true });
-      });
+  const playTalkingVideo = (requestUnmuted = true) => {
+    if (!heroVideo) return;
+
+    if (requestUnmuted) {
+      heroVideo.muted = false;
+      heroVideo.volume = 1.0;
+      heroVideo.currentTime = 0;
+      isPlaying = true;
+      isMutedAutoRun = false;
+
+      const playPromise = heroVideo.play();
+      heroVideo.classList.add('playing');
+      setButtonPlayingUnmuted();
+
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn('Browser blocked unmuted autoplay, auto-running muted with instant-unmute ready:', err);
+          // Automatically run muted so the video is 100% running as requested!
+          heroVideo.muted = true;
+          heroVideo.currentTime = 0;
+          heroVideo.play().then(() => {
+            isPlaying = true;
+            isMutedAutoRun = true;
+            heroVideo.classList.add('playing');
+            setButtonPlayingMuted();
+            setupGlobalUnmuteListener();
+          }).catch((e) => {
+            console.error('Muted autoplay failed:', e);
+            stopTalkingVideo();
+          });
+        });
+      }
+    } else {
+      heroVideo.muted = true;
+      heroVideo.currentTime = 0;
+      isPlaying = true;
+      isMutedAutoRun = true;
+      heroVideo.play().then(() => {
+        heroVideo.classList.add('playing');
+        setButtonPlayingMuted();
+        setupGlobalUnmuteListener();
+      }).catch(stopTalkingVideo);
     }
   };
 
   const stopTalkingVideo = () => {
     if (!heroVideo) return;
     isPlaying = false;
+    isMutedAutoRun = false;
     heroVideo.pause();
     heroVideo.classList.remove('playing');
     setButtonIdle();
@@ -81,21 +152,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // When video ends after talking once
     heroVideo.addEventListener('ended', () => {
+      hasPlayedOnce = true;
       stopTalkingVideo();
     });
   }
 
-  // Click to Play button toggle
+  // Click to Play / Enable Audio / Pause button toggle
   clickToPlayBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (isPlaying) {
+    if (isMutedAutoRun) {
+      unmuteAndPlayFromStart();
+    } else if (isPlaying) {
       stopTalkingVideo();
     } else {
-      playTalkingVideo();
+      playTalkingVideo(true);
     }
   });
 
-  // DISMISS PRELOADER & AUTOMATICALLY PLAY VIDEO IMMEDIATELY AFTER
+  // DISMISS PRELOADER & AUTOMATICALLY RUN VIDEO IMMEDIATELY AFTER
   const dismissPreloaderAndPlay = () => {
     if (preloaderDismissed) return;
     preloaderDismissed = true;
@@ -104,10 +178,10 @@ document.addEventListener('DOMContentLoaded', () => {
       preloader.classList.add('hidden');
     }
 
-    // Right after this preloader screen finishes and fades out, automatically play the video!
+    // Right after this preloader screen finishes and fades out, automatically run the video!
     setTimeout(() => {
-      playTalkingVideo();
-    }, 400);
+      playTalkingVideo(true);
+    }, 250);
   };
 
   if (preloader) {
@@ -122,8 +196,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1800);
   } else {
     setTimeout(() => {
-      playTalkingVideo();
-    }, 400);
+      playTalkingVideo(true);
+    }, 250);
   }
 
   // ─────────────────────────────────────────────
