@@ -262,10 +262,15 @@ body {
 }
 
 .nav-logo {
-  height: 28px;
+  height: 32px;
   width: auto;
   object-fit: contain;
   display: block;
+  transition: transform 0.25s ease;
+}
+
+.nav-brand:hover .nav-logo {
+  transform: scale(1.05);
 }
 
 .brand-dot { color: var(--red); }
